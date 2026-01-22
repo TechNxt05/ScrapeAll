@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Plus, Clock, Search, ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import Button from '@/components/Button';
-import Card from '@/components/Card';
-import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
-import { Project } from '@/lib/types';
+import Button from '../../components/Button';
+import Card from '../../components/Card';
+import { api } from '../../lib/api';
+import { useAuth } from '../../lib/auth-context';
+import { Project } from '../../lib/types';
 
 export default function DashboardPage() {
     const { user, isAuthenticated, loading: authLoading } = useAuth();

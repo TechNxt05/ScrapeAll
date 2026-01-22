@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Card from '@/components/Card';
-import Button from '@/components/Button';
-import Input from '@/components/Input';
-import { scrapeWebsite, chatWithContent, detectForms, getProject, getChatHistory, getLatestScrape } from '@/lib/api';
-import { ScrapeResult, DetectedForm } from '@/lib/types';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { scrapeWebsite, chatWithContent, detectForms, getProject, getChatHistory, getLatestScrape } from '../lib/api';
+import { ScrapeResult, DetectedForm } from '../lib/types';
 import { Globe, MessageSquare, FileText, Search, Sparkles, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 

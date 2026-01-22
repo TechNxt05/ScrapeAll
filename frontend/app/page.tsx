@@ -157,16 +157,23 @@ function HomeContent() {
     }
   };
 
+  // Add Source state
+  const [showSourceInput, setShowSourceInput] = useState(false);
+  const [newSourceUrl, setNewSourceUrl] = useState('');
+
+  // ... (existing code)
+
   const handleAddSource = async () => {
-    if (!url || !projectId) return;
+    if (!newSourceUrl || !projectId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await scrapeWebsite(url, undefined, projectId, selector);
+      const data = await scrapeWebsite(newSourceUrl, undefined, projectId, selector);
       if (data.success) {
         setResult(data);
-        // Maybe show toast?
         alert("Source added to project!");
+        setNewSourceUrl('');
+        setShowSourceInput(false);
       } else {
         setError(data.error || 'Failed to add source');
       }
@@ -191,7 +198,7 @@ function HomeContent() {
       content += `**Source**: ${result.url}\n`;
       content += `**Date**: ${result.created_at}\n\n`;
       content += `## Summary\n${result.summary}\n\n`;
-      content += `## Key Points\n${result.key_points?.map(p => `- ${p}`).join('\n')}\n`;
+      content += `## Key Points\n${result.key_points?.map((p: string) => `- ${p}`).join('\n')}\n`;
     }
 
     const blob = new Blob([content], { type });
@@ -204,6 +211,8 @@ function HomeContent() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  const cssOptions = ['article', 'main', '#content', '.post-content', 'table', 'p'];
 
   return (
     <main className="min-h-screen bg-black/90 text-white selection:bg-primary/30">
@@ -273,257 +282,296 @@ function HomeContent() {
 
                 {projectId && (
                   <Button
-                    onClick={handleAddSource}
-                    isLoading={loading}
+                    onClick={() => setShowSourceInput(!showSourceInput)}
                     variant="secondary"
                     className="md:w-48 h-auto text-xs"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Source
+                    {showSourceInput ? 'Cancel' : 'Add Source'}
                   </Button>
                 )}
               </div>
-            </div>
+            </div >
 
-            {showAdvanced && (
-              <div className="pt-4 border-t border-white/10 animate-fade-in-down">
-                <label className="text-xs text-white/60 mb-1 block">CSS Selector (Optional)</label>
-                <Input
-                  placeholder="e.g. .article-content, #main-text"
-                  value={selector}
-                  onChange={(e) => setSelector(e.target.value)}
-                  className="text-sm font-mono"
-                />
-                <p className="text-[10px] text-white/40 mt-1">
-                  Only scrape text from specific elements. Leave empty for full page.
-                </p>
-              </div>
-            )}
-          </div>
-        </Card>
+            {/* Add Source Input Area */}
+            {
+              showSourceInput && projectId && (
+                <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 animate-fade-in-down flex gap-2">
+                  <Input
+                    placeholder="Enter new source URL"
+                    value={newSourceUrl}
+                    onChange={(e) => setNewSourceUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleAddSource}
+                    isLoading={loading}
+                    className="w-auto px-6"
+                  >
+                    Add
+                  </Button>
+                </div>
+              )
+            }
+
+            {
+              showAdvanced && (
+                <div className="pt-4 border-t border-white/10 animate-fade-in-down">
+                  <label className="text-xs text-white/60 mb-1 block">CSS Selector (Optional)</label>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="e.g. .article-content, #main-text"
+                      value={selector}
+                      onChange={(e) => setSelector(e.target.value)}
+                      className="text-sm font-mono"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {cssOptions.map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setSelector(opt)}
+                          className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5 transition-colors font-mono text-white/60 hover:text-white"
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-white/40 mt-1">
+                    Only scrape text from specific elements. Leave empty for full page. Click options to quick-select.
+                  </p>
+                </div>
+              )
+            }
+          </div >
+        </Card >
 
         {/* Error Message */}
-        {error && (
-          <div className="max-w-3xl mx-auto bg-error/10 border border-error/20 text-error rounded-xl p-4 flex items-center">
-            <AlertCircle className="w-5 h-5 mr-3" />
-            {error}
-          </div>
-        )}
+        {
+          error && (
+            <div className="max-w-3xl mx-auto bg-error/10 border border-error/20 text-error rounded-xl p-4 flex items-center">
+              <AlertCircle className="w-5 h-5 mr-3" />
+              {error}
+            </div>
+          )
+        }
 
         {/* Results Section */}
-        {result && (
-          <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-500">
-            {/* Tabs */}
-            <div className="flex justify-center space-x-2 p-1 bg-white/5 backdrop-blur-lg rounded-xl max-w-fit mx-auto border border-white/10">
-              {[
-                { id: 'summary', icon: FileText, label: 'Summary' },
-                { id: 'chat', icon: MessageSquare, label: 'Chat' },
-                { id: 'forms', icon: Globe, label: 'Forms' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center px-6 py-2.5 rounded-lg transition-all duration-300 font-medium ${activeTab === tab.id
-                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                    : 'text-white/60 hover:text-white hover:bg-white/10'
-                    }`}
-                >
-                  <tab.icon className="w-4 h-4 mr-2" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+        {
+          result && (
+            <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-500">
+              {/* Tabs */}
+              <div className="flex justify-center space-x-2 p-1 bg-white/5 backdrop-blur-lg rounded-xl max-w-fit mx-auto border border-white/10">
+                {[
+                  { id: 'summary', icon: FileText, label: 'Summary' },
+                  { id: 'chat', icon: MessageSquare, label: 'Chat' },
+                  { id: 'forms', icon: Globe, label: 'Forms' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex items-center px-6 py-2.5 rounded-lg transition-all duration-300 font-medium ${activeTab === tab.id
+                      ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                      }`}
+                  >
+                    <tab.icon className="w-4 h-4 mr-2" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* Content Area */}
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Main Content */}
-              <Card className="md:col-span-2 min-h-[500px]">
-                {activeTab === 'summary' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-3 flex items-center justify-between text-primary">
-                        <div className="flex items-center">
-                          <Sparkles className="w-5 h-5 mr-2" />
-                          AI Summary
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleExport('json')}
-                            className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center border border-white/10"
-                          >
-                            <Download className="w-3 h-3 mr-1.5" />
-                            JSON
-                          </button>
-                          <button
-                            onClick={() => handleExport('markdown')}
-                            className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center border border-white/10"
-                          >
-                            <Download className="w-3 h-3 mr-1.5" />
-                            Markdown
-                          </button>
-                        </div>
-                      </h3>
-                      <p className="text-white/80 leading-relaxed text-lg">
-                        {result.summary}
-                      </p>
-                    </div>
-
-                    {result.key_points && (
+              {/* Content Area */}
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Main Content */}
+                <Card className="md:col-span-2 min-h-[500px]">
+                  {activeTab === 'summary' && (
+                    <div className="space-y-6">
                       <div>
-                        <h3 className="text-lg font-semibold mb-3 text-secondary">Key Points</h3>
-                        <ul className="space-y-3">
-                          {result.key_points.map((point, i) => (
-                            <li key={i} className="flex items-start bg-white/5 p-3 rounded-lg border border-white/5">
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-sm mr-3 mt-0.5">
-                                {i + 1}
-                              </span>
-                              <span className="text-white/80">{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
+                        <h3 className="text-xl font-semibold mb-3 flex items-center justify-between text-primary">
+                          <div className="flex items-center">
+                            <Sparkles className="w-5 h-5 mr-2" />
+                            AI Summary
+                          </div>
 
-                {activeTab === 'chat' && (
-                  <div className="flex flex-col h-full h-[500px]">
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
-                      {chatHistory.length === 0 && (
-                        <div className="h-full flex flex-col items-center justify-center text-white/30">
-                          <MessageSquare className="w-12 h-12 mb-2 opacity-50" />
-                          <p>Ask questions about the scraped content</p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleExport('json')}
+                              className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center border border-white/10"
+                            >
+                              <Download className="w-3 h-3 mr-1.5" />
+                              JSON
+                            </button>
+                            <button
+                              onClick={() => handleExport('markdown')}
+                              className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center border border-white/10"
+                            >
+                              <Download className="w-3 h-3 mr-1.5" />
+                              Markdown
+                            </button>
+                          </div>
+                        </h3>
+                        <p className="text-white/80 leading-relaxed text-lg">
+                          {result.summary}
+                        </p>
+                      </div>
+
+                      {result.key_points && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 text-secondary">Key Points</h3>
+                          <ul className="space-y-3">
+                            {result.key_points.map((point, i) => (
+                              <li key={i} className="flex items-start bg-white/5 p-3 rounded-lg border border-white/5">
+                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-sm mr-3 mt-0.5">
+                                  {i + 1}
+                                </span>
+                                <span className="text-white/80">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
-                      {chatHistory.map((msg, i) => (
-                        <div
-                          key={i}
-                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
+                    </div>
+                  )}
+
+                  {activeTab === 'chat' && (
+                    <div className="flex flex-col h-full h-[500px]">
+                      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
+                        {chatHistory.length === 0 && (
+                          <div className="h-full flex flex-col items-center justify-center text-white/30">
+                            <MessageSquare className="w-12 h-12 mb-2 opacity-50" />
+                            <p>Ask questions about the scraped content</p>
+                          </div>
+                        )}
+                        {chatHistory.map((msg, i) => (
                           <div
-                            className={`max-w-[80%] p-4 rounded-2xl ${msg.role === 'user'
-                              ? 'bg-primary text-white rounded-br-none'
-                              : 'bg-white/10 text-white/90 rounded-bl-none'
-                              }`}
+                            key={i}
+                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                           >
-                            <div className="prose prose-invert prose-sm">
-                              <ReactMarkdown>
-                                {msg.content}
-                              </ReactMarkdown>
+                            <div
+                              className={`max-w-[80%] p-4 rounded-2xl ${msg.role === 'user'
+                                ? 'bg-primary text-white rounded-br-none'
+                                : 'bg-white/10 text-white/90 rounded-bl-none'
+                                }`}
+                            >
+                              <div className="prose prose-invert prose-sm">
+                                <ReactMarkdown>
+                                  {msg.content}
+                                </ReactMarkdown>
+                              </div>
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 mt-auto">
+                        <Input
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder="Ask a question..."
+                          onKeyPress={(e) => e.key === 'Enter' && handleChat()}
+                        />
+                        <Button onClick={handleChat} disabled={!chatInput}>Send</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'forms' && (
+                    <div className="space-y-6">
+                      {!detectedForms && (
+                        <div className="text-center py-12">
+                          <Button onClick={handleDetectForms} isLoading={loading}>
+                            Detect Forms on Page
+                          </Button>
+                        </div>
+                      )}
+
+                      {detectedForms?.map((form, i) => (
+                        <div key={i} className="bg-white/5 p-6 rounded-xl border border-white/10">
+                          <h4 className="text-lg font-semibold mb-4 flex justify-between items-center">
+                            <span>Form #{i + 1}</span>
+                            <span className="text-xs bg-white/10 px-2 py-1 rounded">
+                              {form.method}
+                            </span>
+                          </h4>
+                          <div className="space-y-2">
+                            {form.fields.map((field, j) => (
+                              <div key={j} className="flex items-center text-sm text-white/60 bg-black/20 p-2 rounded">
+                                <span className="w-24 font-mono text-accent">{field.type}</span>
+                                <span className="flex-1">{field.name}</span>
+                                {field.required && (
+                                  <span className="text-xs text-error bg-error/10 px-1.5 py-0.5 rounded">Required</span>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2 mt-auto">
-                      <Input
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Ask a question..."
-                        onKeyPress={(e) => e.key === 'Enter' && handleChat()}
-                      />
-                      <Button onClick={handleChat} disabled={!chatInput}>Send</Button>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'forms' && (
-                  <div className="space-y-6">
-                    {!detectedForms && (
-                      <div className="text-center py-12">
-                        <Button onClick={handleDetectForms} isLoading={loading}>
-                          Detect Forms on Page
-                        </Button>
-                      </div>
-                    )}
-
-                    {detectedForms?.map((form, i) => (
-                      <div key={i} className="bg-white/5 p-6 rounded-xl border border-white/10">
-                        <h4 className="text-lg font-semibold mb-4 flex justify-between items-center">
-                          <span>Form #{i + 1}</span>
-                          <span className="text-xs bg-white/10 px-2 py-1 rounded">
-                            {form.method}
-                          </span>
-                        </h4>
-                        <div className="space-y-2">
-                          {form.fields.map((field, j) => (
-                            <div key={j} className="flex items-center text-sm text-white/60 bg-black/20 p-2 rounded">
-                              <span className="w-24 font-mono text-accent">{field.type}</span>
-                              <span className="flex-1">{field.name}</span>
-                              {field.required && (
-                                <span className="text-xs text-error bg-error/10 px-1.5 py-0.5 rounded">Required</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-
-              {/* Sidebar Info */}
-              <div className="space-y-6">
-                <Card>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-4">
-                    Scrape Details
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-xs text-white/40">Status</p>
-                      <div className={`flex items-center ${result.status === 'FAILED' ? 'text-error' : 'text-success'}`}>
-                        <span className={`w-2 h-2 rounded-full mr-2 ${result.status === 'FAILED' ? 'bg-error' : 'bg-success animate-pulse'}`} />
-                        {result.status || 'Completed'}
-                      </div>
-                      {result.error_message && (
-                        <p className="text-xs text-error mt-1">{result.error_message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-white/40">Method Used</p>
-                      <p className="font-mono text-sm">{result.scrape_method}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-white/40">AI Provider</p>
-                      <p className="font-mono text-sm capitalize">{result.ai_provider}</p>
-                    </div>
-                  </div>
+                  )}
                 </Card>
 
-                {result.entities && (
+                {/* Sidebar Info */}
+                <div className="space-y-6">
                   <Card>
                     <h3 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-4">
-                      Detected Entities
+                      Scrape Details
                     </h3>
                     <div className="space-y-4">
-                      {Object.entries(result.entities).map(([key, values]) => {
-                        if (!values || values.length === 0) return null;
-                        return (
-                          <div key={key}>
-                            <p className="text-xs text-secondary capitalize mb-2">{key}</p>
-                            <div className="flex flex-wrap gap-2">
-                              {values.slice(0, 5).map((v, k) => (
-                                <span key={k} className="text-xs bg-white/5 px-2 py-1 rounded border border-white/5">
-                                  {v}
-                                </span>
-                              ))}
-                              {values.length > 5 && (
-                                <span className="text-xs text-white/40 px-1">+{values.length - 5} more</span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      <div className="space-y-1">
+                        <p className="text-xs text-white/40">Status</p>
+                        <div className={`flex items-center ${result.status === 'FAILED' ? 'text-error' : 'text-success'}`}>
+                          <span className={`w-2 h-2 rounded-full mr-2 ${result.status === 'FAILED' ? 'bg-error' : 'bg-success animate-pulse'}`} />
+                          {result.status || 'Completed'}
+                        </div>
+                        {result.error_message && (
+                          <p className="text-xs text-error mt-1">{result.error_message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-white/40">Method Used</p>
+                        <p className="font-mono text-sm">{result.scrape_method}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-white/40">AI Provider</p>
+                        <p className="font-mono text-sm capitalize">{result.ai_provider}</p>
+                      </div>
                     </div>
                   </Card>
-                )}
+
+                  {result.entities && (
+                    <Card>
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-4">
+                        Detected Entities
+                      </h3>
+                      <div className="space-y-4">
+                        {Object.entries(result.entities).map(([key, values]) => {
+                          if (!values || values.length === 0) return null;
+                          return (
+                            <div key={key}>
+                              <p className="text-xs text-secondary capitalize mb-2">{key}</p>
+                              <div className="flex flex-wrap gap-2">
+                                {values.slice(0, 5).map((v, k) => (
+                                  <span key={k} className="text-xs bg-white/5 px-2 py-1 rounded border border-white/5">
+                                    {v}
+                                  </span>
+                                ))}
+                                {values.length > 5 && (
+                                  <span className="text-xs text-white/40 px-1">+{values.length - 5} more</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </main>
+          )
+        }
+      </div >
+    </main >
   );
 }
 

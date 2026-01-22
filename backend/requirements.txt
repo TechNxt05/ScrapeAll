@@ -1,0 +1,45 @@
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# AI Providers (with fallback priority)
+groq==0.4.1
+google-generativeai==0.3.2
+huggingface-hub==0.20.3
+openai==1.10.0
+
+# Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+selenium==4.17.2
+playwright==1.41.0
+webdriver-manager==4.0.1
+
+# RAG & Vector Database
+chromadb==0.4.22
+langchain==0.1.4
+langchain-openai==0.0.5
+sentence-transformers==2.3.1
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dateutil==2.8.2
+
+# Background Tasks
+celery==5.3.6
+redis==5.0.1
+
+# HTTP & CORS
+httpx==0.26.0
+aiohttp==3.9.3

@@ -5,10 +5,11 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     isLoading?: boolean;
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+    icon?: React.ElementType;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, children, isLoading, variant = 'primary', ...props }, ref) => {
+    ({ className, children, isLoading, variant = 'primary', icon: Icon, ...props }, ref) => {
         const variants = {
             primary: 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:shadow-primary/30 border-transparent',
             secondary: 'bg-white/10 text-white hover:bg-white/20 border-white/10',
@@ -28,6 +29,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 {...props}
             >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {!isLoading && Icon && <Icon className="mr-2 h-4 w-4" />}
                 {children}
             </button>
         );

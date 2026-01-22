@@ -1,11 +1,24 @@
-'use client';
+// ... inside HomeContent
+
+const [scrapes, setScrapes] = useState<ScrapeResult[]>([]);
+const [activeScrapeId, setActiveScrapeId] = useState<number | null>(null);
+
+// Import getProjectScrapes
+// NOTE: You must update the import manually if it's not automatically done (it was updated in previous steps but check imports)
+// Checking imports: import ... { ..., getProjectScrapes } from '../lib/api'; 
+// Wait, I need to add it to the import list in the top of the file as well.
+
+// Actually, I will do this via a multi_replace since I need to touch imports and multiple sections.
+
+// This tool call is canceled in favor of a MultiReplace to handle imports + state + UI logic cleanly.
+// Returning control to think block.
 
 import { useState, useEffect, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Card from '@/components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { scrapeWebsite, chatWithContent, detectForms, getProject, getChatHistory, getLatestScrape } from '../lib/api';
+import { scrapeWebsite, chatWithContent, detectForms, getProject, getChatHistory, getLatestScrape, getProjectScrapes } from '../lib/api';
 import { ScrapeResult, DetectedForm } from '../lib/types';
 import { Globe, MessageSquare, FileText, Search, Sparkles, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -26,6 +39,8 @@ function HomeContent() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'chat' | 'forms'>('summary');
   const [result, setResult] = useState<ScrapeResult | null>(null);
+  const [scrapes, setScrapes] = useState<ScrapeResult[]>([]);
+  const [activeScrapeId, setActiveScrapeId] = useState<number | null>(null);
   const [projectId, setProjectId] = useState<number | null>(null);
   const [detectedForms, setDetectedForms] = useState<DetectedForm[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,19 +79,28 @@ function HomeContent() {
             console.error("Failed to load chat history", e);
           }
 
-          // Fetch latest scrape to show summary/result
+          // Fetch ALL scrapes for the project
           try {
-            const latestScrape = await getLatestScrape(id);
-            if (latestScrape) {
-              setResult(latestScrape);
-              // If we have a scraped result, we can default to summary or chat
+            const allScrapes = await getProjectScrapes(id);
+            if (allScrapes && allScrapes.length > 0) {
+              setScrapes(allScrapes);
+              setResult(allScrapes[0]); // Default to latest (first in list usually, or sort)
+              setActiveScrapeId(allScrapes[0].id);
               setActiveTab('summary');
             } else {
-              // Project exists but no scrape yet?
-              setActiveTab('chat'); // Or prompt to scrape
+              // Fallback if no scrapes list, try latest single
+              const latestScrape = await getLatestScrape(id);
+              if (latestScrape) {
+                setResult(latestScrape);
+                setScrapes([latestScrape]);
+                setActiveScrapeId(latestScrape.id);
+                setActiveTab('summary');
+              } else {
+                setActiveTab('chat');
+              }
             }
           } catch (e) {
-            console.error("Failed to load latest scrape", e);
+            console.error("Failed to load scrapes", e);
           }
         }
       } catch (e) {
@@ -119,6 +143,10 @@ function HomeContent() {
       if (data.success) {
         setResult(data);
         setProjectId(data.project_id);
+        // Refresh scrapes list
+        const allScrapes = await getProjectScrapes(data.project_id);
+        setScrapes(allScrapes);
+        setActiveScrapeId(data.id);
       } else {
         setError(data.error || 'Scraping failed');
       }
@@ -171,6 +199,11 @@ function HomeContent() {
       const data = await scrapeWebsite(newSourceUrl, undefined, projectId, selector);
       if (data.success) {
         setResult(data);
+        // Refresh scrapes list
+        const allScrapes = await getProjectScrapes(projectId);
+        setScrapes(allScrapes);
+        setActiveScrapeId(data.id);
+
         alert("Source added to project!");
         setNewSourceUrl('');
         setShowSourceInput(false);
@@ -387,11 +420,46 @@ function HomeContent() {
                 <Card className="md:col-span-2 min-h-[500px]">
                   {activeTab === 'summary' && (
                     <div className="space-y-6">
+                      {/* Sub-tabs for Multiple Sources */}
+                      {scrapes.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto pb-2 border-b border-white/10 no-scrollbar">
+                          <button
+                            onClick={() => {
+                              // Optional: 'All' view logic could go here, for now just select latest or iterate
+                            }}
+                            className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-default ${false ? 'bg-primary text-white' : 'bg-white/5 text-white/40'
+                              }`}
+                          >
+                            Sources:
+                          </button>
+                          {scrapes.map((scrape) => (
+                            <button
+                              key={scrape.id}
+                              onClick={() => {
+                                setActiveScrapeId(scrape.id);
+                                setResult(scrape);
+                              }}
+                              className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors border ${activeScrapeId === scrape.id
+                                ? 'bg-primary/20 border-primary text-primary'
+                                : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'
+                                }`}
+                            >
+                              {scrape.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                              {/* Simple domain display */}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <div>
+                        {/* Modified Summary Header to use result state (which updates on tab click) */}
                         <h3 className="text-xl font-semibold mb-3 flex items-center justify-between text-primary">
                           <div className="flex items-center">
                             <Sparkles className="w-5 h-5 mr-2" />
                             AI Summary
+                            <span className="text-xs text-white/40 ml-2 font-normal">
+                              ({result.url})
+                            </span>
                           </div>
 
                           <div className="flex gap-2">
@@ -436,7 +504,19 @@ function HomeContent() {
 
                   {activeTab === 'chat' && (
                     <div className="flex flex-col h-full h-[500px]">
-                      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
+                      {/* Active Sources Header */}
+                      {scrapes.length > 0 && (
+                        <div className="px-4 py-2 border-b border-white/5 flex gap-2 items-center overflow-x-auto no-scrollbar">
+                          <span className="text-[10px] text-white/40 uppercase tracking-widest">Active Sources:</span>
+                          {scrapes.map(s => (
+                            <span key={s.id} className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-white/60">
+                              {s.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar p-4">
                         {chatHistory.length === 0 && (
                           <div className="h-full flex flex-col items-center justify-center text-white/30">
                             <MessageSquare className="w-12 h-12 mb-2 opacity-50" />

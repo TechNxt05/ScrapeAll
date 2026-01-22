@@ -60,3 +60,8 @@ export const getLatestScrape = async (projectId: number) => {
         return null;
     }
 };
+
+export const getProjectScrapes = async (projectId: number) => {
+    const response = await api.get(`/api/projects/${projectId}/scrapes`);
+    return response.data;
+};

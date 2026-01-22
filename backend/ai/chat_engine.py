@@ -110,9 +110,16 @@ class ChatEngine:
                 n_results=3
             )
             
-            # Extract relevant context
+            # Extract relevant context with source metadata
             if results['documents'] and results['documents'][0]:
-                context = "\n\n".join(results['documents'][0])
+                context_parts = []
+                for i, doc in enumerate(results['documents'][0]):
+                    metadata = results['metadatas'][0][i] if results['metadatas'] and results['metadatas'][0] else {}
+                    source_url = metadata.get('url', 'Unknown Source')
+                    title = metadata.get('title', 'Unknown Title')
+                    context_parts.append(f"[Source: {title} ({source_url})]\n{doc}")
+                
+                context = "\n\n".join(context_parts)
             else:
                 context = "No relevant content found."
             

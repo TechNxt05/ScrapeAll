@@ -175,7 +175,35 @@ async def get_latest_scrape(
         "ai_provider": scrape.ai_provider,
         "error_message": scrape.error_message,
         "created_at": scrape.created_at
+    return {
+        "id": scrape.id,
+        "project_id": scrape.project_id,
+        "url": scrape.url,
+        "status": scrape.status,
+        "summary": scrape.summary,
+        "key_points": scrape.key_points,
+        "entities": scrape.extracted_content.get('entities') if scrape.extracted_content else None,
+        "topics": scrape.extracted_content.get('topics') if scrape.extracted_content else None,
+        "scrape_method": scrape.scrape_method,
+        "ai_provider": scrape.ai_provider,
+        "error_message": scrape.error_message,
+        "created_at": scrape.created_at
     }
+
+@app.get("/api/projects/{project_id}/scrapes", response_model=List[ScrapeResponse])
+async def get_project_scrapes(
+    project_id: int, 
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all scrapes for a project"""
+    # Verify project ownership
+    project = db.query(Project).filter(Project.id == project_id, Project.user_id == user.id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    scrapes = db.query(Scrape).filter(Scrape.project_id == project_id).order_by(Scrape.created_at.desc()).all()
+    return scrapes
 
 @app.get("/api/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(

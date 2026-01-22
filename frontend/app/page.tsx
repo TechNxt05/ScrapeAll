@@ -523,13 +523,14 @@ function HomeContent() {
           </div>
         )}
       </div>
-      );
+    </main>
+  );
 }
 
-      export default function Home() {
+export default function Home() {
   return (
-      <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
-        <HomeContent />
-      </Suspense>
-      );
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
+  );
 }

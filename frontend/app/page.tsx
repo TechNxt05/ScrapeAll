@@ -1,17 +1,4 @@
-// ... inside HomeContent
-
-const [scrapes, setScrapes] = useState<ScrapeResult[]>([]);
-const [activeScrapeId, setActiveScrapeId] = useState<number | null>(null);
-
-// Import getProjectScrapes
-// NOTE: You must update the import manually if it's not automatically done (it was updated in previous steps but check imports)
-// Checking imports: import ... { ..., getProjectScrapes } from '../lib/api'; 
-// Wait, I need to add it to the import list in the top of the file as well.
-
-// Actually, I will do this via a multi_replace since I need to touch imports and multiple sections.
-
-// This tool call is canceled in favor of a MultiReplace to handle imports + state + UI logic cleanly.
-// Returning control to think block.
+'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import Navbar from '@/components/Navbar';

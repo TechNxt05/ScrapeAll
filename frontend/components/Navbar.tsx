@@ -2,7 +2,7 @@
 
 // Add useAuth import
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '../lib/auth-context';
 import { Sparkles, Github, Twitter, LayoutDashboard, LogOut } from 'lucide-react';
 import Button from './Button';
 
